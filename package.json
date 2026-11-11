@@ -1,0 +1,19 @@
+{
+  "name": "medtech-3d-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Interaktiver 3D-Geräteexplorer für Medizintechnik (Lehrmodelle)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}

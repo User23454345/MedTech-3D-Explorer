@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Interaktiver 3D-Geräteexplorer für Medizintechnik – Aufbau, Funktion und Physik medizinischer Geräte verstehen." />
+    <title>MedTech 3D Explorer</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect rx='7' width='32' height='32' fill='%230b1220'/%3E%3Cpath d='M6 17h5l3-7 4 13 3-6h5' stroke='%2338bdf8' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <button id="btn-library" class="icon-btn" aria-label="Gerätebibliothek ein-/ausblenden" title="Gerätebibliothek">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+        </button>
+        <div class="brand">
+          <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect rx="7" width="32" height="32" fill="#13213a" /><path d="M6 17h5l3-7 4 13 3-6h5" stroke="#38bdf8" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <span>MedTech <b>3D Explorer</b></span>
+        </div>
+        <div class="device-title" id="device-title"></div>
+        <div class="top-actions">
+          <button id="btn-help" class="ghost-btn">Steuerung</button>
+          <button id="btn-sources" class="ghost-btn">Quellen &amp; Genauigkeit</button>
+          <button id="btn-panel" class="icon-btn only-mobile" aria-label="Infopanel ein-/ausblenden" title="Infopanel">
+            <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none" /><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+          </button>
+        </div>
+      </header>
+
+      <aside class="library" id="library" aria-label="Gerätebibliothek">
+        <h2>Gerätebibliothek</h2>
+        <nav id="device-list"></nav>
+        <p class="lib-note">Alle 3D-Modelle sind <b>schematische Lehrmodelle</b>. Sie zeigen den prinzipiellen Aufbau, keine Herstellergeometrie.</p>
+      </aside>
+
+      <main class="stage" id="stage">
+        <div id="viewport" class="viewport"></div>
+        <div class="stage-top" id="stage-top">
+        <div class="toolbar" id="toolbar" role="toolbar" aria-label="Ansichtswerkzeuge">
+            <button class="tool" id="tool-reset" title="Ansicht zurücksetzen">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <span>Reset</span>
+            </button>
+            <div class="tool-group" title="Gehäusedarstellung">
+              <span class="tool-label">Gehäuse</span>
+              <div class="seg" id="seg-housing">
+                <button data-v="solid">Massiv</button><button data-v="ghost" class="on">Transparent</button><button data-v="hidden">Aus</button>
+              </div>
+            </div>
+            <label class="tool-group" title="Explosionsansicht">
+              <span class="tool-label">Explosion</span>
+              <input type="range" id="rng-explode" min="0" max="1" step="0.01" value="0" />
+            </label>
+            <div class="tool-group" title="Schnittdarstellung">
+              <label class="switch"><input type="checkbox" id="chk-section" /><span>Schnitt</span></label>
+              <div class="seg small" id="seg-axis"><button data-v="x" class="on">X</button><button data-v="y">Y</button><button data-v="z">Z</button></div>
+              <input type="range" id="rng-section" min="0" max="1" step="0.005" value="0.5" disabled />
+            </div>
+            <label class="switch" title="Bauteilnummern einblenden (Name beim Überfahren)"><input type="checkbox" id="chk-labels" checked /><span>Nummern</span></label>
+            <label class="switch" title="Nicht ausgewählte Bauteile abdunkeln"><input type="checkbox" id="chk-focus" /><span>Fokus</span></label>
+            <button class="tool primary" id="tool-play" title="Funktionsanimation starten/pausieren">
+              <svg viewBox="0 0 24 24" width="18" height="18" class="ico-play"><path d="M7 5l12 7-12 7z" fill="currentColor" /></svg>
+              <svg viewBox="0 0 24 24" width="18" height="18" class="ico-pause"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" /></svg>
+              <span>Animation</span>
+            </button>
+          </div>
+          <div id="learn-banner" class="learn-banner" hidden></div>
+          <div id="caption" class="caption" hidden></div>
+        </div>
+        <div class="badge-schematic" id="badge-schematic" title="Didaktisches Modell: Anordnung und Form der Bauteile sind vereinfacht und herstellerunabhängig.">
+          Schematisches Lehrmodell · keine Herstellergeometrie
+        </div>
+        <div id="tooltip" class="tooltip" hidden></div>
+        <div id="loading" class="loading">3D-Modell wird geladen …</div>
+
+        <div class="chart-panel" id="chart-panel" hidden>
+          <canvas id="chart"></canvas>
+          <div class="chart-stats" id="chart-stats"></div>
+        </div>
+
+        <div class="placeholder" id="placeholder" hidden></div>
+      </main>
+
+      <aside class="panel" id="panel" aria-label="Informationen">
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="parts" class="on">Bauteile</button>
+          <button role="tab" data-tab="details">Details</button>
+          <button role="tab" data-tab="function">Funktion</button>
+          <button role="tab" data-tab="learn">Lernen</button>
+        </div>
+        <section class="tab-body" id="tab-parts"></section>
+        <section class="tab-body" id="tab-details" hidden></section>
+        <section class="tab-body" id="tab-function" hidden></section>
+        <section class="tab-body" id="tab-learn" hidden></section>
+      </aside>
+    </div>
+
+    <dialog id="dlg-help" class="dialog">
+      <form method="dialog"><button class="close" aria-label="Schließen">×</button></form>
+      <h2>Steuerung</h2>
+      <table class="help-table">
+        <tr><th></th><th>Maus</th><th>Touch (Tablet)</th></tr>
+        <tr><td>Drehen</td><td>Linke Maustaste ziehen</td><td>Ein Finger ziehen</td></tr>
+        <tr><td>Zoomen</td><td>Mausrad</td><td>Zwei Finger spreizen</td></tr>
+        <tr><td>Verschieben</td><td>Rechte Maustaste oder Shift + linke Maustaste</td><td>Zwei Finger ziehen</td></tr>
+        <tr><td>Bauteil auswählen</td><td>Klick</td><td>Tippen</td></tr>
+        <tr><td>Bauteil heranzoomen</td><td>Doppelklick</td><td>„Fokussieren“ im Detailpanel</td></tr>
+      </table>
+      <h3>Werkzeuge</h3>
+      <ul>
+        <li><b>Gehäuse</b> – massiv, transparent oder ausgeblendet, um ins Innere zu sehen.</li>
+        <li><b>Explosion</b> – zieht die Bauteile auseinander (Gasleitungen werden dabei ausgeblendet).</li>
+        <li><b>Schnitt</b> – schneidet das Modell entlang der X-, Y- oder Z-Achse auf.</li>
+        <li><b>Fokus</b> – dunkelt alle nicht ausgewählten Bauteile ab.</li>
+        <li><b>Animation</b> – zeigt Gasfluss und Regelkreis; Parameter im Tab „Funktion“.</li>
+      </ul>
+      <p class="muted">Tastatur: <kbd>R</kbd> Reset · <kbd>Leertaste</kbd> Animation · <kbd>E</kbd> Explosion · <kbd>S</kbd> Schnitt · <kbd>Esc</kbd> Auswahl aufheben</p>
+    </dialog>
+
+    <dialog id="dlg-sources" class="dialog wide">
+      <form method="dialog"><button class="close" aria-label="Schließen">×</button></form>
+      <h2>Quellen &amp; wissenschaftliche Genauigkeit</h2>
+      <div class="accuracy-grid">
+        <div class="acc-card schematic">
+          <h3>Schematisch (dieses Projekt)</h3>
+          <p>Alle 3D-Modelle sind <b>didaktische Lehrmodelle</b>. Form, Größe und Lage der Bauteile sind vereinfacht und keinem Hersteller zugeordnet. Es werden ausschließlich Komponenten dargestellt, die zum allgemein dokumentierten Funktionsprinzip der Geräteklasse gehören.</p>
+        </div>
+        <div class="acc-card real">
+          <h3>Herstellergeometrie (nicht enthalten)</h3>
+          <p>Reale CAD-Daten von Herstellern sind nicht öffentlich verfügbar und werden nicht verwendet. Für gerätespezifische Fragen gelten ausschließlich die Gebrauchsanweisung und die technische Dokumentation des jeweiligen Herstellers.</p>
+        </div>
+      </div>
+      <h3>Wo sich reale Geräte unterscheiden</h3>
+      <ul>
+        <li>Flowsensoren können in die Gasmodule integriert, am Exspirationsausgang oder proximal am Y-Stück angeordnet sein.</li>
+        <li>Statt Druckluftversorgung nutzen manche Geräte eine Turbine bzw. ein Gebläse.</li>
+        <li>Anzahl und Lage der Drucksensoren, Ventilbauarten und die Elektronikarchitektur sind herstellerspezifisch.</li>
+        <li>Die Simulation verwendet ein Ein-Kompartiment-Modell ohne Schlauchcompliance, Leckage und Spontanatmung.</li>
+      </ul>
+      <h3>Normen &amp; Literatur (Auswahl)</h3>
+      <ul class="refs">
+        <li>ISO 80601-2-12 – Medizinische elektrische Geräte: Besondere Festlegungen für Beatmungsgeräte für die Intensivpflege.</li>
+        <li>IEC 60601-1-8 – Alarmsysteme in medizinischen elektrischen Geräten und Systemen.</li>
+        <li>ISO 5359 – Niederdruck-Schlauchleitungen für medizinische Gase (gasartspezifische Anschlüsse).</li>
+        <li>ISO 7396-1 – Rohrleitungssysteme für medizinische Gase.</li>
+        <li>ISO 32 – Gasflaschen für medizinische Gase: Kennzeichnung (Farbcodierung).</li>
+        <li>DIN 13260-2 – Versorgungsanlagen für medizinische Gase: Entnahmestellen/Steckkupplungen.</li>
+        <li>Rathgeber, J.: Grundlagen der maschinellen Beatmung. Thieme.</li>
+        <li>Oczenski, W. (Hrsg.): Atmen – Atemhilfen. Thieme.</li>
+        <li>Larsen, R.; Ziegenfuß, T.: Beatmung – Indikationen, Techniken, Krankheitsbilder. Springer.</li>
+      </ul>
+      <p class="warn"><b>Hinweis:</b> Diese Anwendung dient ausschließlich der Lehre. Sie ersetzt keine Geräteeinweisung nach MPBetreibV und ist nicht für klinische Entscheidungen bestimmt.</p>
+    </dialog>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
